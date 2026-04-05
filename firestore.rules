@@ -10,7 +10,8 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && 
         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-         request.auth.token.email == "fbnewacc32@gmail.com");
+         request.auth.token.email == "fbnewacc32@gmail.com" ||
+         request.auth.token.email == "aronnoreak12@gmail.com");
     }
     
     function isOwner(userId) {
@@ -35,6 +36,12 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       allow update: if isAdmin();
       allow delete: if isAdmin();
+    }
+
+    // Site Settings
+    match /site_settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // Reviews

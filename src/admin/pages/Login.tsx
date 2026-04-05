@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { auth, db } from '../../shared/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../shared/store/useAuth';
 import { ShieldCheck, Lock, Mail, ArrowRight } from 'lucide-react';
@@ -15,13 +15,34 @@ export default function AdminLogin() {
   const { setUser } = useAuth();
 
   const handleAdminCheck = async (user: any) => {
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    if (userDoc.exists() && userDoc.data()?.role === 'admin') {
-      setUser(user, true);
-      navigate('/admin');
-    } else {
-      setError('Access denied. You do not have administrator privileges.');
-      await auth.signOut();
+    try {
+      const userEmail = (user.email || '').toLowerCase().trim();
+      const superAdmins = ['fbnewacc32@gmail.com', 'aronnoreak12@gmail.com'];
+      const isSuperAdmin = superAdmins.includes(userEmail);
+      
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const hasAdminRole = userDoc.exists() && userDoc.data()?.role === 'admin';
+      
+      if (isSuperAdmin || hasAdminRole) {
+        // If super admin but no doc, create one
+        if (isSuperAdmin && !userDoc.exists()) {
+          await setDoc(doc(db, 'users', user.uid), {
+            email: userEmail,
+            role: 'admin',
+            createdAt: new Date()
+          });
+        }
+        
+        setUser(user, true);
+        // Use relative navigation or absolute path that works with the basename
+        navigate('/');
+      } else {
+        setError('Access denied. You do not have administrator privileges.');
+        await auth.signOut();
+      }
+    } catch (err: any) {
+      console.error('Admin check error:', err);
+      setError('An error occurred while checking permissions.');
     }
   };
 

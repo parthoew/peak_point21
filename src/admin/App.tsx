@@ -73,9 +73,16 @@ export default function AdminApp() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const isAdmin = userDoc.exists() && userDoc.data()?.role === 'admin';
-        setUser(user, isAdmin);
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          const userEmail = (user.email || '').toLowerCase().trim();
+          const isSuperAdmin = ['fbnewacc32@gmail.com', 'aronnoreak12@gmail.com'].includes(userEmail);
+          const hasAdminRole = userDoc.exists() && userDoc.data()?.role === 'admin';
+          setUser(user, isSuperAdmin || hasAdminRole);
+        } catch (error) {
+          console.error('Auth check error:', error);
+          setUser(user, false);
+        }
       } else {
         setUser(null, false);
       }
@@ -86,7 +93,7 @@ export default function AdminApp() {
   }, [setUser, setLoading]);
 
   return (
-    <Router>
+    <Router basename="/admin">
       <div className="min-h-screen bg-gray-50 flex">
         <Routes>
           <Route path="/login" element={<Login />} />
