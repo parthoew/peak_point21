@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, query, getDocs, orderBy, limit, where } from 'firebase/firestore';
-import { db } from '../../firebase';
-import { formatPrice, cn } from '../../lib/utils';
+import { db } from '../../shared/firebase';
+import { formatPrice, cn } from '../../shared/utils';
 import { 
   TrendingUp, 
   ShoppingBag, 
@@ -69,7 +69,8 @@ export default function AdminDashboard() {
         </div>
         <div className="flex space-x-4">
           <button className="bg-white border border-gray-200 px-6 py-2 rounded-xl text-sm font-bold hover:border-black transition-all">EXPORT REPORT</button>
-          <Link to="/admin/products" className="bg-black text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-gray-900 transition-all">ADD PRODUCT</Link>
+          <Link to="/settings" className="bg-white border border-gray-200 px-6 py-2 rounded-xl text-sm font-bold hover:border-black transition-all">SITE SETTINGS</Link>
+          <Link to="/products" className="bg-black text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-gray-900 transition-all">ADD PRODUCT</Link>
         </div>
       </div>
 
@@ -104,7 +105,7 @@ export default function AdminDashboard() {
         <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-8 border-b border-gray-50 flex justify-between items-center">
             <h2 className="text-xl font-bold tracking-tight">RECENT ORDERS</h2>
-            <Link to="/admin/orders" className="text-xs font-bold text-black border-b border-black pb-0.5">VIEW ALL</Link>
+            <Link to="/orders" className="text-xs font-bold text-black border-b border-black pb-0.5">VIEW ALL</Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">

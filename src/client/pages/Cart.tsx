@@ -1,5 +1,5 @@
-import { useCart } from '../../store/useCart';
-import { formatPrice } from '../../lib/utils';
+import { useCart } from '../../shared/store/useCart';
+import { formatPrice } from '../../shared/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -37,7 +37,7 @@ export default function Cart() {
           {items.map((item) => (
             <motion.div
               layout
-              key={`${item.id}-${item.size}`}
+              key={`${item.id}-${item.size}-${item.color || ''}-${item.material || ''}`}
               className="flex items-center space-x-6 pb-8 border-b border-gray-100"
             >
               <div className="w-24 h-32 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
@@ -47,24 +47,28 @@ export default function Cart() {
                 <div className="flex justify-between items-start">
                   <h3 className="font-bold text-lg">{item.name}</h3>
                   <button
-                    onClick={() => removeItem(item.id, item.size)}
+                    onClick={() => removeItem(item.id, item.size, item.color, item.material)}
                     className="text-gray-400 hover:text-red-500 transition-colors"
                   >
                     <Trash2 size={18} />
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 uppercase tracking-widest">Size: {item.size}</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  <span>Size: {item.size}</span>
+                  {item.color && <span>Color: {item.color}</span>}
+                  {item.material && <span>Material: {item.material}</span>}
+                </div>
                 <div className="flex justify-between items-center pt-4">
                   <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
                     <button
-                      onClick={() => updateQuantity(item.id, item.size, Math.max(1, item.quantity - 1))}
+                      onClick={() => updateQuantity(item.id, item.size, Math.max(1, item.quantity - 1), item.color, item.material)}
                       className="p-2 hover:bg-gray-100 transition-colors"
                     >
                       <Minus size={14} />
                     </button>
                     <span className="w-10 text-center text-sm font-bold">{item.quantity}</span>
                     <button
-                      onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)}
+                      onClick={() => updateQuantity(item.id, item.size, item.quantity + 1, item.color, item.material)}
                       className="p-2 hover:bg-gray-100 transition-colors"
                     >
                       <Plus size={14} />

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { auth, db } from '../../firebase';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { auth, db } from '../../shared/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../store/useAuth';
+import { useAuth } from '../../shared/store/useAuth';
 import { ShieldCheck, Lock, Mail, ArrowRight } from 'lucide-react';
 
 export default function AdminLogin() {
@@ -36,16 +36,6 @@ export default function AdminLogin() {
       setError(err.message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      await handleAdminCheck(result.user);
-    } catch (err: any) {
-      setError(err.message);
     }
   };
 
@@ -106,19 +96,6 @@ export default function AdminLogin() {
             <ArrowRight size={20} />
           </button>
         </form>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
-          <div className="relative flex justify-center text-xs uppercase tracking-widest font-bold"><span className="bg-white px-4 text-gray-400">OR</span></div>
-        </div>
-
-        <button
-          onClick={handleGoogleLogin}
-          className="w-full border-2 border-gray-100 py-4 rounded-xl font-bold hover:border-black transition-all flex items-center justify-center space-x-3"
-        >
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
-          <span>SIGN IN WITH GOOGLE</span>
-        </button>
 
         <p className="text-center text-[10px] text-gray-400 uppercase tracking-widest">
           Authorized Personnel Only. All access is logged.

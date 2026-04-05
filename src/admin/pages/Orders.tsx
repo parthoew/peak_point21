@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, updateDoc, doc, orderBy, query } from 'firebase/firestore';
-import { db } from '../../firebase';
-import { formatPrice, cn } from '../../lib/utils';
-import { Search, Filter, Eye, ChevronRight, Clock, Truck, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { db } from '../../shared/firebase';
+import { formatPrice, cn } from '../../shared/utils';
+import { Search, Filter, Eye, ChevronRight, Clock, Truck, CheckCircle2, AlertCircle, X, MapPin, Phone, Mail, FileText, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { sendNotification, NotificationType } from '../../shared/services/notificationService';
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -30,6 +31,32 @@ export default function AdminOrders() {
   const updateStatus = async (orderId: string, newStatus: string) => {
     try {
       await updateDoc(doc(db, 'orders', orderId), { status: newStatus });
+      
+      // Send notification based on status
+      let notificationType: NotificationType = 'order_confirmation';
+      let message = '';
+
+      if (newStatus === 'confirmed') {
+        notificationType = 'order_confirmation';
+        message = `Your order #PP-${orderId.slice(0, 8).toUpperCase()} has been confirmed.`;
+      } else if (newStatus === 'shipped') {
+        notificationType = 'order_shipped';
+        message = `Your order #PP-${orderId.slice(0, 8).toUpperCase()} has been shipped!`;
+      } else if (newStatus === 'delivered') {
+        notificationType = 'order_delivered';
+        message = `Your order #PP-${orderId.slice(0, 8).toUpperCase()} has been delivered. Thank you for shopping with us!`;
+      }
+
+      if (message) {
+        const order = orders.find(o => o.id === orderId);
+        await sendNotification({
+          userId: order?.userId,
+          orderId,
+          type: notificationType,
+          message,
+        });
+      }
+
       fetchOrders();
       if (selectedOrder?.id === orderId) {
         setSelectedOrder({ ...selectedOrder, status: newStatus });
@@ -188,18 +215,40 @@ export default function AdminOrders() {
                 <div className="grid grid-cols-2 gap-10 pt-10 border-t border-gray-100">
                   <div>
                     <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Shipping Address</h3>
-                    <div className="text-sm space-y-1">
-                      <p className="font-bold">{selectedOrder.shippingAddress?.firstName} {selectedOrder.shippingAddress?.lastName}</p>
-                      <p>{selectedOrder.shippingAddress?.address}</p>
-                      <p>{selectedOrder.shippingAddress?.area}, {selectedOrder.shippingAddress?.city}</p>
-                      <p>Phone: {selectedOrder.shippingAddress?.phone}</p>
+                    <div className="text-sm space-y-2">
+                      <p className="font-bold flex items-center space-x-2">
+                        <User size={14} className="text-gray-400" />
+                        <span>{selectedOrder.shippingAddress?.fullName}</span>
+                      </p>
+                      <p className="flex items-center space-x-2">
+                        <MapPin size={14} className="text-gray-400" />
+                        <span>{selectedOrder.shippingAddress?.address}, {selectedOrder.shippingAddress?.division}</span>
+                      </p>
+                      <p className="flex items-center space-x-2">
+                        <Phone size={14} className="text-gray-400" />
+                        <span>{selectedOrder.shippingAddress?.phone}</span>
+                      </p>
+                      <p className="flex items-center space-x-2 text-gray-400">
+                        <Mail size={14} />
+                        <span>{selectedOrder.shippingAddress?.email}</span>
+                      </p>
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Payment Details</h3>
-                    <div className="text-sm space-y-1">
-                      <p className="font-bold uppercase tracking-widest">{selectedOrder.paymentMethod}</p>
-                      <p className="text-gray-500">Status: {selectedOrder.status === 'delivered' ? 'Paid' : 'Pending'}</p>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Payment & Notes</h3>
+                    <div className="text-sm space-y-4">
+                      <div>
+                        <p className="text-[10px] uppercase text-gray-400 font-bold mb-1">Payment Method</p>
+                        <p className="font-bold uppercase tracking-widest">{selectedOrder.paymentMethod}</p>
+                      </div>
+                      {selectedOrder.shippingAddress?.note && (
+                        <div>
+                          <p className="text-[10px] uppercase text-gray-400 font-bold mb-1">Delivery Note</p>
+                          <p className="text-gray-600 italic bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            "{selectedOrder.shippingAddress.note}"
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

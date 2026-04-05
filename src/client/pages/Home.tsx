@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { cn } from '../../lib/utils';
+import { cn } from '../../shared/utils';
 
 const HERO_IMAGES = [
   'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop',
@@ -111,9 +111,14 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
-            className="w-12 h-12 bg-black rounded-full mx-auto flex items-center justify-center text-white font-bold"
+            className="w-20 h-20 bg-black rounded-full mx-auto flex items-center justify-center overflow-hidden border-4 border-white shadow-xl aspect-square"
           >
-            P
+            <img 
+              src="https://image2url.com/r2/default/images/1775421148504-e3595f09-8c3e-4bb5-97d1-1eff6e90e6ca.png" 
+              alt="Peak Point Icon" 
+              className="w-full h-full object-cover aspect-square"
+              referrerPolicy="no-referrer"
+            />
           </motion.div>
           <h2 className="text-4xl font-bold tracking-tighter">THE PEAK POINT PHILOSOPHY</h2>
           <p className="text-xl text-gray-600 leading-relaxed font-light italic">

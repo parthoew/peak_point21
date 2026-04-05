@@ -1,25 +1,67 @@
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Instagram, Facebook, Twitter, Mail, Phone, MapPin } from 'lucide-react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../../shared/firebase';
 
 export default function Footer() {
+  const [settings, setSettings] = useState({
+    contact: {
+      email: 'support@peakpoint.com',
+      phone: '+880 1234 567890',
+      address: 'Gulshan 2, Dhaka, Bangladesh'
+    },
+    social: {
+      instagram: 'https://instagram.com/peakpoint',
+      facebook: 'https://facebook.com/peakpoint',
+      twitter: 'https://twitter.com/peakpoint'
+    }
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const docRef = doc(db, 'settings', 'site');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setSettings(docSnap.data() as any);
+        }
+      } catch (error) {
+        console.error('Error fetching footer settings:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
+
   return (
     <footer className="bg-black text-white pt-20 pb-10 px-6">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
         {/* Brand */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold tracking-tighter">PEAK POINT</h2>
+          <Link to="/" className="flex flex-col space-y-4">
+            <img 
+              src="https://image2url.com/r2/default/images/1775421148504-e3595f09-8c3e-4bb5-97d1-1eff6e90e6ca.png" 
+              alt="Peak Point Icon" 
+              className="h-16 w-16 object-cover rounded-full border border-white/20"
+              referrerPolicy="no-referrer"
+            />
+            <div className="flex flex-col -space-y-1">
+              <span className="text-3xl font-display font-bold tracking-[0.15em] text-white uppercase">PEAK POINT</span>
+              <span className="text-[10px] font-display font-medium tracking-[0.45em] text-gray-400 uppercase ml-1">BEYOND ORDINARY</span>
+            </div>
+          </Link>
           <p className="text-gray-400 text-sm leading-relaxed">
             Redefining luxury fashion in Bangladesh. Premium quality, timeless designs, and an
             unmatched shopping experience.
           </p>
           <div className="flex space-x-4">
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">
+            <a href={settings.social.instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
               <Instagram size={20} />
             </a>
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">
+            <a href={settings.social.facebook} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
               <Facebook size={20} />
             </a>
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">
+            <a href={settings.social.twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
               <Twitter size={20} />
             </a>
           </div>
@@ -53,15 +95,15 @@ export default function Footer() {
           <ul className="space-y-4 text-sm text-gray-400">
             <li className="flex items-center space-x-3">
               <MapPin size={16} />
-              <span>Gulshan 2, Dhaka, Bangladesh</span>
+              <span>{settings.contact.address}</span>
             </li>
             <li className="flex items-center space-x-3">
               <Phone size={16} />
-              <span>+880 1234 567890</span>
+              <span>{settings.contact.phone}</span>
             </li>
             <li className="flex items-center space-x-3">
               <Mail size={16} />
-              <span>support@peakpoint.com</span>
+              <span>{settings.contact.email}</span>
             </li>
           </ul>
         </div>
@@ -71,11 +113,6 @@ export default function Footer() {
         <p className="text-xs text-gray-500">
           © {new Date().getFullYear()} Peak Point. All rights reserved.
         </p>
-        <div className="flex space-x-6">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Mastercard_2019_logo.svg/1200px-Mastercard_2019_logo.svg.png" alt="Mastercard" className="h-4 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all" referrerPolicy="no-referrer" />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa" className="h-4 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all" referrerPolicy="no-referrer" />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/1200px-PayPal.svg.png" alt="Paypal" className="h-4 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all" referrerPolicy="no-referrer" />
-        </div>
       </div>
     </footer>
   );

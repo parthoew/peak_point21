@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs, where } from 'firebase/firestore';
-import { useSearchParams } from 'react-router-dom';
-import { db } from '../../firebase';
-import ProductCard from '../../components/ui/ProductCard';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { db } from '../../shared/firebase';
+import ProductCard from '../../shared/components/ui/ProductCard';
 import { Filter, ChevronDown, Search, SlidersHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '../../shared/utils';
 
 export default function Shop() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const categoryParam = searchParams.get('category');
   const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState('newest');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -34,6 +38,27 @@ export default function Shop() {
     fetchProducts();
   }, [categoryParam]);
 
+  const sortedProducts = [...products]
+    .filter(product => 
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'price-low':
+          return a.price - b.price;
+        case 'price-high':
+          return b.price - a.price;
+        case 'popularity':
+          return (b.sales || 0) - (a.sales || 0);
+        case 'newest':
+        default:
+          const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+          const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+          return dateB.getTime() - dateA.getTime();
+      }
+    });
+
   return (
     <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -42,7 +67,7 @@ export default function Shop() {
           <h1 className="text-4xl font-bold tracking-tighter uppercase">
             {categoryParam ? `${categoryParam} Collection` : 'All Products'}
           </h1>
-          <p className="text-gray-500 mt-2">{products.length} items found</p>
+          <p className="text-gray-500 mt-2">{sortedProducts.length} items found</p>
         </div>
 
         <div className="flex items-center space-x-4 w-full md:w-auto">
@@ -51,6 +76,8 @@ export default function Shop() {
             <input
               type="text"
               placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
             />
           </div>
@@ -78,10 +105,29 @@ export default function Shop() {
                 <h3 className="text-xs font-bold uppercase tracking-widest mb-4">Category</h3>
                 <div className="space-y-2">
                   {['All', 'Men', 'Women', 'Accessories'].map(cat => (
-                    <label key={cat} className="flex items-center space-x-2 cursor-pointer group">
-                      <div className="w-4 h-4 border border-gray-300 rounded group-hover:border-black transition-colors" />
-                      <span className="text-sm text-gray-600 group-hover:text-black">{cat}</span>
-                    </label>
+                    <button 
+                      key={cat} 
+                      onClick={() => {
+                        const params = new URLSearchParams(searchParams);
+                        if (cat === 'All') params.delete('category');
+                        else params.set('category', cat);
+                        navigate(`/shop?${params.toString()}`);
+                      }}
+                      className="flex items-center space-x-2 cursor-pointer group w-full text-left"
+                    >
+                      <div className={cn(
+                        "w-4 h-4 border rounded transition-colors",
+                        (categoryParam === cat || (!categoryParam && cat === 'All')) 
+                          ? "bg-black border-black" 
+                          : "border-gray-300 group-hover:border-black"
+                      )} />
+                      <span className={cn(
+                        "text-sm transition-colors",
+                        (categoryParam === cat || (!categoryParam && cat === 'All'))
+                          ? "text-black font-bold"
+                          : "text-gray-600 group-hover:text-black"
+                      )}>{cat}</span>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -105,11 +151,15 @@ export default function Shop() {
               </div>
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-widest mb-4">Sort By</h3>
-                <select className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none">
-                  <option>Newest First</option>
-                  <option>Price: Low to High</option>
-                  <option>Price: High to Low</option>
-                  <option>Popularity</option>
+                <select 
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none cursor-pointer"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="popularity">Popularity</option>
                 </select>
               </div>
             </div>
@@ -128,16 +178,24 @@ export default function Shop() {
             </div>
           ))}
         </div>
-      ) : products.length > 0 ? (
+      ) : sortedProducts.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
-          {products.map(product => (
+          {sortedProducts.map(product => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
       ) : (
         <div className="text-center py-20">
-          <h3 className="text-xl font-bold text-gray-400">No products found in this category.</h3>
-          <button className="mt-4 text-black font-bold border-b-2 border-black pb-1">BROWSE ALL</button>
+          <h3 className="text-xl font-bold text-gray-400">No products found.</h3>
+          <button 
+            onClick={() => {
+              setSearchQuery('');
+              setSortBy('newest');
+            }}
+            className="mt-4 text-black font-bold border-b-2 border-black pb-1"
+          >
+            CLEAR ALL FILTERS
+          </button>
         </div>
       )}
     </div>
