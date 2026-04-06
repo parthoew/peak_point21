@@ -20,12 +20,21 @@ export default function AdminLogin() {
       const superAdmins = ['fbnewacc32@gmail.com', 'aronnoreak12@gmail.com'];
       const isSuperAdmin = superAdmins.includes(userEmail);
       
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      const hasAdminRole = userDoc.exists() && userDoc.data()?.role === 'admin';
+      console.log('Checking admin status for:', userEmail, 'isSuperAdmin:', isSuperAdmin);
+      
+      let hasAdminRole = false;
+      let userDocSnapshot: any = null;
+      try {
+        userDocSnapshot = await getDoc(doc(db, 'users', user.uid));
+        hasAdminRole = userDocSnapshot.exists() && userDocSnapshot.data()?.role === 'admin';
+        console.log('User doc exists:', userDocSnapshot.exists(), 'hasAdminRole:', hasAdminRole);
+      } catch (err) {
+        console.error('Error reading user doc:', err);
+      }
       
       if (isSuperAdmin || hasAdminRole) {
         // If super admin but no doc, create one
-        if (isSuperAdmin && !userDoc.exists()) {
+        if (isSuperAdmin && (!userDocSnapshot || !userDocSnapshot.exists())) {
           await setDoc(doc(db, 'users', user.uid), {
             email: userEmail,
             role: 'admin',
@@ -37,7 +46,7 @@ export default function AdminLogin() {
         // Use relative navigation or absolute path that works with the basename
         navigate('/');
       } else {
-        setError('Access denied. You do not have administrator privileges.');
+        setError(`Access denied for ${userEmail}. You do not have administrator privileges.`);
         await auth.signOut();
       }
     } catch (err: any) {

@@ -31,10 +31,17 @@ export default function AdminDashboard() {
         const ordersSnap = await getDocs(collection(db, 'orders'));
         const usersSnap = await getDocs(collection(db, 'users'));
         
-        const totalRevenue = ordersSnap.docs.reduce((acc, doc) => acc + doc.data().total, 0);
+        const totalRevenue = ordersSnap.docs.reduce((acc, doc) => {
+          const data = doc.data();
+          return acc + (Number(data.total) || 0);
+        }, 0);
         const recentOrders = ordersSnap.docs
           .map(doc => ({ id: doc.id, ...doc.data() } as any))
-          .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0))
+          .sort((a, b) => {
+            const timeA = a.createdAt?.toMillis?.() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
+            const timeB = b.createdAt?.toMillis?.() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
+            return timeB - timeA;
+          })
           .slice(0, 5);
 
         setStats({

@@ -272,6 +272,14 @@ export default function ProductDetail() {
             <h1 className="text-4xl font-bold tracking-tighter mb-2">{product.name}</h1>
             <div className="flex items-baseline space-x-4">
               <p className="text-2xl font-bold text-gray-900">{formatPrice(displayPrice)}</p>
+              {product.originalPrice && product.originalPrice > displayPrice && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg text-gray-400 line-through font-bold">{formatPrice(product.originalPrice)}</span>
+                  <span className="bg-black text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">
+                    -{Math.round(((product.originalPrice - displayPrice) / product.originalPrice) * 100)}% OFF
+                  </span>
+                </div>
+              )}
               {displayStock <= 5 && displayStock > 0 && (
                 <span className="text-xs font-bold text-red-500 uppercase tracking-widest animate-pulse">Only {displayStock} left!</span>
               )}

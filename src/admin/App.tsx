@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../shared/firebase';
@@ -93,7 +93,7 @@ export default function AdminApp() {
   }, [setUser, setLoading]);
 
   return (
-    <Router basename="/admin">
+    <Router>
       <div className="min-h-screen bg-gray-50 flex">
         <Routes>
           <Route path="/login" element={<Login />} />

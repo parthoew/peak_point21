@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '../../shared/utils';
 
 const HERO_IMAGES = [
@@ -9,6 +9,8 @@ const HERO_IMAGES = [
 ];
 
 export default function Home() {
+  const navigate = useNavigate();
+
   return (
     <div className="overflow-hidden">
       {/* Hero Section */}
@@ -79,14 +81,15 @@ export default function Home() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[
-            { name: "Men's Premium", img: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?q=80&w=1974&auto=format&fit=crop', span: 'md:col-span-2' },
-            { name: "Women's Elite", img: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop', span: '' },
-            { name: "Accessories", img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop', span: '' },
-            { name: "New Arrivals", img: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop', span: 'md:col-span-2' },
+            { name: "Men's Premium", category: "Men", img: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?q=80&w=1974&auto=format&fit=crop', span: 'md:col-span-2' },
+            { name: "Women's Elite", category: "Women", img: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop', span: '' },
+            { name: "Accessories", category: "Accessories", img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop', span: '' },
+            { name: "New Arrivals", category: "New Arrivals", img: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop', span: 'md:col-span-2' },
           ].map((cat, i) => (
             <motion.div
               key={i}
               whileHover={{ scale: 1.02 }}
+              onClick={() => navigate(`/shop?category=${cat.category}`)}
               className={cn("relative h-[400px] overflow-hidden group cursor-pointer rounded-2xl", cat.span)}
             >
               <img

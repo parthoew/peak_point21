@@ -77,6 +77,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           referrerPolicy="no-referrer"
         />
+        {/* Discount Badge */}
+        {product.originalPrice && product.originalPrice > product.price && (
+          <div className="absolute top-4 left-4 z-10 bg-black text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase shadow-lg">
+            -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+          </div>
+        )}
         {/* Hover Actions */}
         <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-6 space-x-3">
           <button
@@ -111,7 +117,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <h3 className="text-sm font-bold text-gray-900 group-hover:text-gray-600 transition-colors">
             {product.name}
           </h3>
-          <span className="text-sm font-bold">{formatPrice(product.price)}</span>
+          <div className="flex flex-col items-end">
+            <span className="text-sm font-bold">{formatPrice(product.price)}</span>
+            {product.originalPrice && product.originalPrice > product.price && (
+              <span className="text-[10px] text-gray-400 line-through font-bold">
+                {formatPrice(product.originalPrice)}
+              </span>
+            )}
+          </div>
         </div>
         <p className="text-xs text-gray-500 uppercase tracking-widest">{product.category}</p>
       </div>

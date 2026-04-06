@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import imageCompression from 'browser-image-compression';
 import { db, storage } from '../../shared/firebase';
 import { formatPrice, cn } from '../../shared/utils';
 import { Plus, Trash2, Edit2, Search, Filter, X, Upload, Package, CheckCircle2, GripVertical, AlertTriangle, Layers } from 'lucide-react';
@@ -21,16 +22,19 @@ export default function AdminProducts() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [imageUrlInput, setImageUrlInput] = useState('');
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
   const [bulkStockValue, setBulkStockValue] = useState('');
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [editingId, setEditingId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
     price: '',
+    originalPrice: '',
     category: 'Men',
     stock: '',
     description: '',
@@ -98,9 +102,18 @@ export default function AdminProducts() {
     setIsUploading(true);
     try {
       const files = Array.from(e.target.files) as File[];
+      
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true
+      };
+
       const uploadPromises = files.map(async (file) => {
+        // Compress image
+        const compressedFile = await imageCompression(file, options);
         const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
+        await uploadBytes(storageRef, compressedFile);
         return getDownloadURL(storageRef);
       });
       
@@ -113,22 +126,44 @@ export default function AdminProducts() {
     }
   };
 
+  const handleAddImageUrl = () => {
+    if (!imageUrlInput.trim()) return;
+    if (!imageUrlInput.startsWith('http')) {
+      alert('Please enter a valid URL starting with http or https');
+      return;
+    }
+    setFormData(prev => ({ ...prev, images: [...prev.images, imageUrlInput.trim()] }));
+    setImageUrlInput('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const productData = {
         ...formData,
         price: parseFloat(formData.price),
+        originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
         stock: formData.variants.length > 0 
           ? formData.variants.reduce((acc, v) => acc + v.stock, 0)
           : parseInt(formData.stock),
-        createdAt: serverTimestamp()
+        updatedAt: serverTimestamp()
       };
-      await addDoc(collection(db, 'products'), productData);
+
+      if (editingId) {
+        await updateDoc(doc(db, 'products', editingId), productData);
+      } else {
+        await addDoc(collection(db, 'products'), {
+          ...productData,
+          createdAt: serverTimestamp()
+        });
+      }
+
       setIsModalOpen(false);
+      setEditingId(null);
       setFormData({ 
         name: '', 
         price: '', 
+        originalPrice: '',
         category: 'Men', 
         stock: '', 
         description: '', 
@@ -138,8 +173,24 @@ export default function AdminProducts() {
       });
       fetchProducts();
     } catch (error) {
-      console.error('Error adding product:', error);
+      console.error('Error saving product:', error);
     }
+  };
+
+  const handleEdit = (product: any) => {
+    setEditingId(product.id);
+    setFormData({
+      name: product.name || '',
+      price: product.price?.toString() || '',
+      originalPrice: product.originalPrice?.toString() || '',
+      category: product.category || 'Men',
+      stock: product.stock?.toString() || '',
+      description: product.description || '',
+      images: product.images || [],
+      sizes: product.sizes || ['S', 'M', 'L', 'XL'],
+      variants: product.variants || []
+    });
+    setIsModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -221,7 +272,21 @@ export default function AdminProducts() {
             )}
           </AnimatePresence>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setEditingId(null);
+              setFormData({ 
+                name: '', 
+                price: '', 
+                originalPrice: '',
+                category: 'Men', 
+                stock: '', 
+                description: '', 
+                images: [], 
+                sizes: ['S', 'M', 'L', 'XL'],
+                variants: []
+              });
+              setIsModalOpen(true);
+            }}
             className="bg-black text-white px-8 py-3 rounded-2xl text-sm font-bold hover:bg-gray-900 transition-all flex items-center space-x-2"
           >
             <Plus size={20} />
@@ -343,7 +408,12 @@ export default function AdminProducts() {
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex space-x-2">
-                      <button className="p-2 text-gray-400 hover:text-black transition-colors"><Edit2 size={18} /></button>
+                      <button 
+                        onClick={() => handleEdit(product)}
+                        className="p-2 text-gray-400 hover:text-black transition-colors"
+                      >
+                        <Edit2 size={18} />
+                      </button>
                       <button
                         onClick={() => handleDelete(product.id)}
                         className="p-2 text-gray-400 hover:text-red-500 transition-colors"
@@ -422,7 +492,21 @@ export default function AdminProducts() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsModalOpen(false)}
+              onClick={() => {
+                setIsModalOpen(false);
+                setEditingId(null);
+                setFormData({ 
+                  name: '', 
+                  price: '', 
+                  originalPrice: '',
+                  category: 'Men', 
+                  stock: '', 
+                  description: '', 
+                  images: [], 
+                  sizes: ['S', 'M', 'L', 'XL'],
+                  variants: []
+                });
+              }}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
             <motion.div
@@ -432,8 +516,29 @@ export default function AdminProducts() {
               className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden"
             >
               <div className="p-8 border-b border-gray-100 flex justify-between items-center">
-                <h2 className="text-2xl font-bold tracking-tighter uppercase">ADD NEW PRODUCT</h2>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={20} /></button>
+                <h2 className="text-2xl font-bold tracking-tighter uppercase">
+                  {editingId ? 'EDIT PRODUCT' : 'ADD NEW PRODUCT'}
+                </h2>
+                <button 
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setEditingId(null);
+                    setFormData({ 
+                      name: '', 
+                      price: '', 
+                      originalPrice: '',
+                      category: 'Men', 
+                      stock: '', 
+                      description: '', 
+                      images: [], 
+                      sizes: ['S', 'M', 'L', 'XL'],
+                      variants: []
+                    });
+                  }} 
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
               </div>
 
               <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
@@ -461,12 +566,21 @@ export default function AdminProducts() {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Price (BDT)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Current Price (BDT)</label>
                     <input
                       required
                       type="number"
                       value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      className="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/5"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Past Price (Optional)</label>
+                    <input
+                      type="number"
+                      value={formData.originalPrice}
+                      onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
                       className="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/5"
                     />
                   </div>
@@ -619,6 +733,28 @@ export default function AdminProducts() {
                     ))}
                   </Reorder.Group>
 
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Add Image via URL</label>
+                    </div>
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        placeholder="Paste image URL here..."
+                        value={imageUrlInput}
+                        onChange={(e) => setImageUrlInput(e.target.value)}
+                        className="flex-grow p-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/5 text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddImageUrl}
+                        className="px-6 bg-black text-white rounded-xl font-bold text-xs hover:bg-gray-900 transition-all"
+                      >
+                        ADD URL
+                      </button>
+                    </div>
+                  </div>
+
                   <label className="w-full h-32 rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-black transition-all group bg-gray-50/50">
                     <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" multiple />
                     {isUploading ? (
@@ -645,7 +781,7 @@ export default function AdminProducts() {
                   className="w-full bg-black text-white py-5 rounded-2xl font-bold hover:bg-gray-900 transition-all flex items-center justify-center space-x-3"
                 >
                   <CheckCircle2 size={20} />
-                  <span>SAVE PRODUCT</span>
+                  <span>{editingId ? 'UPDATE PRODUCT' : 'SAVE PRODUCT'}</span>
                 </button>
               </form>
             </motion.div>
